@@ -7,7 +7,7 @@ To install:
 git clone https://intelligentagent@bitbucket.org/intelligentagent/pypruss.git  
 cd PyPRUSS/PRUSS  
 make  
-make install
+make install  
 export LD_LIBRARY_PATH=/usr/local/lib  
   
 To try the blinkled example:  
