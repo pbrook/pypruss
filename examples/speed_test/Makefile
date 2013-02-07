@@ -1,6 +1,6 @@
 
 COMPILER=../../PASM/pasm -b 
-FILENAME=ddr_loop
+FILENAME=speed_test
 
 .PHONY: clean all
 

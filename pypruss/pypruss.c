@@ -12,15 +12,39 @@ You can use and change this, but keep this heading :)
 #include <Python.h>
 #include <prussdrv.h>
 #include <pruss_intc_mapping.h>
+#include <fcntl.h>
 
-// Modprobe 
+// Modprobe. Takes an optional argument of ddr buffer size 
 static PyObject *pypruss_modprobe(PyObject *self, PyObject *args){
-	system("modprobe uio_pruss");									
+	int ret;	
+	unsigned long ddr_size;
+	char cmd[50];
+
+	if (!PyArg_ParseTuple(args, "|l", &ddr_size))
+		ddr_size = 0x40000L;
+	
+	sprintf(cmd, "/sbin/modprobe uio_pruss extram_pool_sz=0x%lx", ddr_size);	
+	ret = system(cmd);					
+	if (ret){
+        perror("modprobe failed\n");
+        return NULL;
+    }
+
     Py_INCREF(Py_None);
     return Py_None;
 }
 
+static PyObject *pypruss_modunprobe(PyObject *self, PyObject *args){
+	int ret;	
+	ret = system("/sbin/modprobe -r uio_pruss");									
+	if (ret){
+        printf("modprobe -r uio_pruss failed\n");
+        return NULL;
+    }
 
+    Py_INCREF(Py_None);
+    return Py_None;
+}
 // Init
 static PyObject *pypruss_init(PyObject *self, PyObject *args){
     prussdrv_init ();	    
@@ -159,9 +183,53 @@ static PyObject *pypruss_exit(PyObject *self, PyObject *args){
     return Py_None;
 }
 
+// DDR addr. Get the address of the ddr memory
+static PyObject *pypruss_ddr_addr(PyObject *self, PyObject *args){	
+ 	int fd;
+	char hex[12];
+	unsigned long addr = 0;
+
+	fd = open ("/sys/class/uio/uio0/maps/map2/addr", O_RDONLY, S_IREAD);
+	if (fd){
+		read(fd, hex, 10);
+        addr = strtoul(hex, NULL, 16);
+        close(fd);    	
+  	}
+	else{
+		printf("Unable to open /sys/class/uio/uio0/maps/map2/addr\n");	
+		return NULL;
+	}
+
+	return Py_BuildValue("k", addr);
+}
+
+// DDR size. Get the address of the ddr memory
+static PyObject *pypruss_ddr_size(PyObject *self, PyObject *args){	
+ 	int fd;
+	char hex[12];
+	unsigned long size = 0;
+	int len;
+
+	fd = open ("/sys/class/uio/uio0/maps/map2/size", O_RDONLY, S_IREAD);
+	if (fd){
+		len = read(fd, hex, 10);
+        size = strtoul(hex, NULL, 16);
+        close(fd);    	
+  	}
+	else{
+		printf("Unable to open /sys/class/uio/uio0/maps/map2/size\n");	
+		return NULL;
+	}
+
+	return Py_BuildValue("k", size);
+}
+
+
+
 // Declare the methods to export
 static PyMethodDef pypruss_methods[] = {
         { "modprobe", (PyCFunction)pypruss_modprobe, METH_VARARGS, NULL },
+        { "modunprobe", (PyCFunction)pypruss_modunprobe, METH_VARARGS, NULL },
         { "init", (PyCFunction)pypruss_init, METH_VARARGS, NULL },
         { "open", (PyCFunction)pypruss_open, METH_VARARGS, NULL },
 		{ "pru_reset", (PyCFunction)pypruss_pru_reset, METH_VARARGS, NULL},
@@ -173,11 +241,12 @@ static PyMethodDef pypruss_methods[] = {
 		{ "wait_for_event", (PyCFunction)pypruss_wait_for_event, METH_VARARGS, NULL},
 		{ "clear_event", (PyCFunction)pypruss_clear_event, METH_VARARGS, NULL},		
 		{ "exit", (PyCFunction)pypruss_exit, METH_VARARGS, NULL},
+		{ "ddr_addr", (PyCFunction)pypruss_ddr_addr, METH_VARARGS, NULL},
+		{ "ddr_size", (PyCFunction)pypruss_ddr_size, METH_VARARGS, NULL},
         { NULL, NULL, 0, NULL }
 };
  
 // Some sort of init stuff.         
-PyMODINIT_FUNC initpypruss()
-{
+PyMODINIT_FUNC initpypruss(){
         Py_InitModule3("pypruss", pypruss_methods, "Extenstion lib for PRUSS");
 }

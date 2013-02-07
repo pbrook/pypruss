@@ -31,6 +31,5 @@ DELAY:
     SUB  r1, r1, 1						// Decrement r1
     QBNE SET_PINS, r1, 0				// Branch back to SET_PINS if r0 != 0, abort!
 
-EXIT:
     MOV R31.b0, PRU0_ARM_INTERRUPT+16   // Send notification to Host for program completion
 HALT

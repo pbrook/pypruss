@@ -1,30 +1,40 @@
-''' ddr_write.py - test script for writing to DDR memory using the PyPRUSS library'''
+''' ddr_write.py - Finds the DDR address and size, passes that info to the PRU0 
+data memory, executes a program and reads back data from the first and last banks'''
+
 
 import pypruss
 import mmap
+import struct 
 
-DDR_BASEADDR		= 0x70000000					# The actual baseaddr is 0x80000000, but due to a bug(?), 
-DDR_HACK			= 0x10001000					# Python accept unsigned int as offset argument.
-DDR_FILELEN			= DDR_HACK+0x1000				# The amount of memory to make available
-DDR_OFFSET			= DDR_HACK						# Add the hack to the offset as well. 
+pypruss.modprobe()
+ddr_addr = pypruss.ddr_addr()
+ddr_size = pypruss.ddr_size()
 
-with open("/dev/mem", "r+b") as f:					# Open the memory device
-	ddr_mem = mmap.mmap(f.fileno(), DDR_FILELEN, offset=DDR_BASEADDR) # 
+print "DDR memory address is 0x%x and the size is 0x%x"%(ddr_addr, ddr_size)
 
-data = "".join(map(chr, [20, 0, 0, 0]))				# Make the data, it needs to be a string
-ddr_mem[DDR_OFFSET:DDR_OFFSET+4] = data				# Write the data to the DDR memory, four bytes should suffice
-ddr_mem.close()										# Close the memory 
-f.close()											# Close the file
+ddr_offset  = ddr_addr-0x10000000
+ddr_filelen = ddr_size+0x10000000
+ddr_start 	= 0x10000000
+ddr_end 	= 0x10000000+ddr_size
 
-pypruss.modprobe()							       	# This only has to be called once pr boot
-pypruss.init()										# Init the PRU
-pypruss.open(0)										# Open PRU event 0 which is PRU0_ARM_INTERRUPT
-pypruss.pruintc_init()								# Init the interrupt controller
-pypruss.exec_program(0, "./ddr_write.bin")			# Load firmware "ddr_write.bin" on PRU 0
-pypruss.wait_for_event(0)							# Wait for event 0 which is connected to PRU0_ARM_INTERRUPT
-pypruss.clear_event(0)								# Clear the event
-pypruss.pru_disable(0)								# Disable PRU 0, this is already done by the firmware
-pypruss.exit()										# Exit, don't know what this does. 
+pypruss.init()														# Init the PRU
+pypruss.open(0)														# Open PRU event 0 which is PRU0_ARM_INTERRUPT
+pypruss.pruintc_init()												# Init the interrupt controller
+pypruss.pru_write_memory(0, 0, [ddr_addr, ddr_addr+ddr_size-4])		# Put the ddr address in the first region 
+pypruss.exec_program(0, "./ddr_write.bin")							# Load firmware "ddr_write.bin" on PRU 0
+pypruss.wait_for_event(0)											# Wait for event 0 which is connected to PRU0_ARM_INTERRUPT
+pypruss.clear_event(0)												# Clear the event
+pypruss.exit()														# Exit PRU
 
+with open("/dev/mem", "r+b") as f:									# Open the physical memory device
+	ddr_mem = mmap.mmap(f.fileno(), ddr_filelen, offset=ddr_offset) # mmap the right area
 
+read_back = struct.unpack("L", ddr_mem[ddr_start:ddr_start+4])[0]	# Parse the data
+read_back2 = struct.unpack("L", ddr_mem[ddr_end-4:ddr_end])[0]	    # Parse the data
+
+print "The first 4 bytes of DDR memory reads "+hex(read_back)
+print "The last 4 bytes of DDR memory reads "+hex(read_back2)
+
+ddr_mem.close()														# Close the memory 
+f.close()															# Close the file
 
