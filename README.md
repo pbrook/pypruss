@@ -3,7 +3,7 @@ PyPRUSS
 PyPRUSS is a Python binding for controlling the 
 PRUs on BeagleBone. 
 
-For examples and inspiration: http://hipstercircuits.com/?cat=5
+For examples and inspiration: [http://hipstercircuits.com/?cat=5](http://hipstercircuits.com/?cat=5)  
  
 To install:  
 ----------
