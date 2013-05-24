@@ -189,14 +189,14 @@ static PyObject *pypruss_ddr_addr(PyObject *self, PyObject *args){
 	char hex[12];
 	unsigned long addr = 0;
 
-	fd = open ("/sys/class/uio/uio0/maps/map2/addr", O_RDONLY, S_IREAD);
+	fd = open ("/sys/class/uio/uio0/maps/map1/addr", O_RDONLY, S_IREAD);
 	if (fd){
 		read(fd, hex, 10);
         addr = strtoul(hex, NULL, 16);
         close(fd);    	
   	}
 	else{
-		printf("Unable to open /sys/class/uio/uio0/maps/map2/addr\n");	
+		printf("Unable to open /sys/class/uio/uio0/maps/map1/addr\n");	
 		return NULL;
 	}
 
@@ -210,14 +210,14 @@ static PyObject *pypruss_ddr_size(PyObject *self, PyObject *args){
 	unsigned long size = 0;
 	int len;
 
-	fd = open ("/sys/class/uio/uio0/maps/map2/size", O_RDONLY, S_IREAD);
+	fd = open ("/sys/class/uio/uio0/maps/map1/size", O_RDONLY, S_IREAD);
 	if (fd){
 		len = read(fd, hex, 10);
         size = strtoul(hex, NULL, 16);
         close(fd);    	
   	}
 	else{
-		printf("Unable to open /sys/class/uio/uio0/maps/map2/size\n");	
+		printf("Unable to open /sys/class/uio/uio0/maps/map1/size\n");	
 		return NULL;
 	}
 
