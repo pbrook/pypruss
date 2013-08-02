@@ -23,15 +23,13 @@ try:
         author_email='elias.bakken@gmail.com',
         license='BSD',
         url='http://hipstercirtuits.com',
-        data_files=[('/usr/local/lib', ['pypruss/lib/libprussdrv.so'])],
         ext_modules=[Extension('pypruss', 
-                            ['pypruss/pypruss.c'], 
+                            ['pypruss/pypruss.c', 'pypruss/prussdrv.c'], 
                             include_dirs=['pypruss/include', 
                                 '/usr/include/python2.7',
                                 '/usr/include'],
                             define_macros=[('__DEBUG', None)],
-                            library_dirs=['pypruss/lib'],
-                            libraries=['prussdrv', 'pthread'], 
+                            libraries=['pthread'], 
                             extra_link_args=["-shared"]
 
                     )],
